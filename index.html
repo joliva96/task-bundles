@@ -441,7 +441,7 @@ body {
 }
 
 /* ─── TASK ITEMS ─────────────────────────────────────── */
-.task-list { padding: 12px 12px 130px; }
+.task-list { padding: 12px 12px 160px; }
 .task-group-label {
   font-family: var(--pixel);
   font-size: 7px;
@@ -522,7 +522,7 @@ body {
   background: var(--wood-dk);
   border-top: 3px solid var(--wood-dk);
   display: flex;
-  padding: 8px 10px calc(16px + env(safe-area-inset-bottom, 20px)) 10px;
+  padding: 12px 10px calc(28px + env(safe-area-inset-bottom, 34px)) 10px;
   gap: 8px;
   z-index: 10;
   box-shadow: 0 -2px 0 rgba(0,0,0,0.3);
@@ -992,13 +992,8 @@ body {
 <!-- ═══ BUNDLE DETAIL SCREEN ══════════════════════════════════════ -->
 <div class="screen" id="screen-bundle">
   <div class="topbar">
-    <div>
-      <div class="topbar-title" id="bundle-detail-name">Bundle</div>
-      <span class="topbar-sub" id="bundle-detail-set">Set</span>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="icon-btn" onclick="openEditBundle(currentBundleId)" title="Edit bundle">✏️</button>
-    </div>
+    <div class="topbar-title">🌾 Bundle Board</div>
+    <button class="icon-btn" onclick="openEditBundle(currentBundleId)" title="Edit bundle">✏️</button>
   </div>
   <div id="bundle-complete-banner" class="complete-banner" style="display:none;">
     <p>★ Bundle Complete! ★</p>
@@ -1346,9 +1341,7 @@ function renderBundleDetail() {
   const pct  = prog.total ? Math.round(prog.done/prog.total*100) : 0;
   const done = bundleDone(b.id);
 
-  document.getElementById('bundle-detail-name').textContent  = b.name;
   document.getElementById('bundle-detail-name2').textContent = b.name;
-  document.getElementById('bundle-detail-set').textContent   = set ? set.name : '';
   document.getElementById('bundle-detail-set2').textContent  = set ? `${set.icon} ${set.name}` : '';
   document.getElementById('bundle-detail-icon').textContent  = b.icon;
   document.getElementById('bundle-hero-fill').style.width    = pct + '%';
