@@ -1574,11 +1574,12 @@ async function saveSet() {
   closeModal(); renderSetup(); renderHome();
 }
 async function deleteSet(setId) {
-  if (!confirm('Delete this set? Bundles inside will become uncategorised.')) return;
+  showConfirm('📦', 'Delete Set?', 'Bundles inside will become uncategorised.', async () => {
   sets = sets.filter(s=>s.id!==setId);
   bundles.forEach(b => { if(b.set_id===setId) b.set_id = null; });
   if (sb) { await sb.from('sets').delete().eq('id',setId); }
   renderSetup(); renderHome();
+  });
 }
 
 /* ─── ADD / EDIT BUNDLE ───────────────────────────────────────── */
@@ -1635,7 +1636,7 @@ async function saveBundle() {
   if (currentBundleId) renderBundleDetail();
 }
 async function deleteBundle(bundleId) {
-  if (!confirm('Delete this bundle and all its tasks?')) return;
+  showConfirm('🎁', 'Delete Bundle?', 'This will also delete all tasks inside it.', async () => {
   tasks   = tasks.filter(t=>t.bundle_id!==bundleId);
   bundles = bundles.filter(b=>b.id!==bundleId);
   if (sb) {
@@ -1643,6 +1644,7 @@ async function deleteBundle(bundleId) {
     await sb.from('bundles').delete().eq('id',bundleId);
   }
   renderSetup(); renderHome();
+  });
 }
 
 /* ─── ADD / EDIT TASK ────────────────────────────────────────── */
@@ -1689,13 +1691,14 @@ async function saveTask() {
 async function deleteTask(taskId) {
   const t = tasks.find(x=>x.id===taskId);
   if (!t) return;
-  if (!confirm('Delete this task?')) return;
+  showConfirm('📋', 'Delete Task?', `"${t.name}" will be gone for good.`, async () => {
   const bundleId = t.bundle_id;
   tasks = tasks.filter(x=>x.id!==taskId);
   if (sb) await sb.from('tasks').delete().eq('id',taskId);
   openEditBundle(bundleId);
   renderHome();
   if (currentBundleId === bundleId) renderBundleDetail();
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1707,10 +1710,46 @@ function hideLoading() {
   setTimeout(() => el.style.display='none', 600);
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOM CONFIRM
+═══════════════════════════════════════════════════════════════ */
+function showConfirm(icon, title, msg, onConfirm) {
+  document.getElementById('confirm-icon').textContent  = icon;
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  document.getElementById('confirm-ok-btn').onclick    = () => { closeConfirm(); onConfirm(); };
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+}
+function closeConfirmIfBg(e) {
+  if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+}
+
 /* ═══════════════════════════════════════════════════════════════
    KICK OFF
 ═══════════════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', init);
 </script>
+
+<!-- ═══ CONFIRM MODAL ════════════════════════════════════════ -->
+<div class="modal-overlay" id="confirm-overlay" onclick="closeConfirmIfBg(event)">
+  <div class="modal" style="max-width:320px;">
+    <div class="modal-head">
+      <div class="modal-title" id="confirm-title">Are you sure?</div>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:20px 16px 8px;">
+      <div style="font-size:36px;margin-bottom:10px;" id="confirm-icon">🗑️</div>
+      <p id="confirm-msg" style="font-family:var(--body);font-size:14px;color:var(--wood-lt);line-height:1.5;"></p>
+    </div>
+    <div class="modal-actions" style="padding:12px 16px 16px;">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-primary" id="confirm-ok-btn" style="background:var(--danger);">Delete</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
