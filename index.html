@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Bundle Board"/>
+<meta name="theme-color" content="#5C3D1E"/>
+<title>Bundle Board</title>
+
+<!-- PWA Manifest (inline) -->
+<script>
+const manifestData = {
+  name: "Bundle Board",
+  short_name: "Bundles",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#F2E8C6",
+  theme_color: "#5C3D1E",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%235C3D1E'/%3E%3Ctext x='96' y='130' font-size='120' text-anchor='middle'%3E🎁%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%235C3D1E'/%3E%3Ctext x='256' y='360' font-size='320' text-anchor='middle'%3E🎁%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestURL;
+document.head.appendChild(link);
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+
+<!-- SUPABASE — paste your URL and anon key below -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  --parchment:    #F2E8C6;
+  --parchment-dk: #E8D9A8;
+  --wood:         #5C3D1E;
+  --wood-lt:      #7A5230;
+  --wood-dk:      #3E2810;
+  --gold:         #D4A017;
+  --gold-lt:      #F0C040;
+  --green:        #4A7C59;
+  --green-lt:     #6AAF7A;
+  --blue:         #6B8FA3;
+  --blue-lt:      #8FB5CC;
+  --cream:        #FFF8E7;
+  --text-dark:    #2C1A0A;
+  --text-mid:     #5C3D1E;
+  --complete:     #FFD700;
+  --complete-bg:  #FFF9E0;
+  --danger:       #C0392B;
+  --pixel: "Press Start 2P", monospace;
+  --body: "Lato", sans-serif;
+  --radius: 4px;
+  --shadow: 2px 2px 0 var(--wood-dk);
+}
+
+/* ─── RESET ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--body);
+  background: var(--wood);
+  color: var(--text-dark);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ─── PIXEL BORDER MIXIN ─────────────────────────────── */
+.pixel-border {
+  border: 3px solid var(--wood-dk);
+  box-shadow: 3px 3px 0 var(--wood-dk), inset 1px 1px 0 rgba(255,255,255,0.3);
+  image-rendering: pixelated;
+}
+
+/* ─── SCREENS ────────────────────────────────────────── */
+.screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  flex-direction: column;
+  background: var(--parchment);
+  overflow: hidden;
+}
+.screen.active { display: flex; }
+
+/* ─── TOP BAR ────────────────────────────────────────── */
+.topbar {
+  background: var(--wood);
+  padding: 12px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 4px solid var(--wood-dk);
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 var(--wood-dk);
+  min-height: 56px;
+}
+.topbar-title {
+  font-family: var(--pixel);
+  font-size: 11px;
+  color: var(--gold-lt);
+  text-shadow: 2px 2px 0 var(--wood-dk);
+  line-height: 1.4;
+  letter-spacing: 0.5px;
+}
+.topbar-sub {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--parchment-dk);
+  display: block;
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+.icon-btn {
+  background: var(--wood-lt);
+  border: 2px solid var(--wood-dk);
+  color: var(--parchment);
+  font-size: 18px;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.icon-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+
+/* ─── SCROLL AREA ────────────────────────────────────── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 12px 80px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── TOGGLE TABS ────────────────────────────────────── */
+.toggle-tabs {
+  display: flex;
+  background: var(--wood-dk);
+  padding: 4px;
+  gap: 4px;
+  flex-shrink: 0;
+  border-bottom: 3px solid var(--wood-dk);
+}
+.tab-btn {
+  flex: 1;
+  font-family: var(--pixel);
+  font-size: 8px;
+  padding: 8px 4px;
+  background: var(--wood-lt);
+  color: var(--parchment-dk);
+  border: 2px solid var(--wood-dk);
+  cursor: pointer;
+  border-radius: var(--radius);
+  letter-spacing: 0.3px;
+  transition: all 0.1s;
+  text-align: center;
+  line-height: 1.6;
+}
+.tab-btn.active {
+  background: var(--gold);
+  color: var(--wood-dk);
+  box-shadow: var(--shadow);
+}
+
+/* ─── SET CARDS ──────────────────────────────────────── */
+.set-card {
+  background: var(--cream);
+  border: 3px solid var(--wood);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.set-card:active { transform: translate(1px,1px); }
+.set-card-header {
+  background: var(--wood);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.set-card-title {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--gold-lt);
+  text-shadow: 1px 1px 0 var(--wood-dk);
+  flex: 1;
+  padding-right: 8px;
+  line-height: 1.5;
+}
+.set-card-emoji { font-size: 20px; }
+.set-card-body { padding: 10px 14px 12px; }
+.set-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.set-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--parchment-dk);
+  border: 2px solid var(--wood-lt);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.set-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--green-lt));
+  transition: width 0.4s ease;
+}
+.set-progress-text {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--wood-lt);
+  white-space: nowrap;
+}
+.set-bundle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.bundle-chip {
+  font-family: var(--pixel);
+  font-size: 6px;
+  padding: 3px 7px;
+  background: var(--parchment-dk);
+  border: 2px solid var(--wood-lt);
+  border-radius: 2px;
+  color: var(--wood);
+  line-height: 1.6;
+}
+.bundle-chip.done {
+  background: var(--complete-bg);
+  border-color: var(--gold);
+  color: var(--wood);
+}
+.bundle-chip.done::before { content: "★ "; }
+
+/* ─── BUNDLE LIST CARDS ──────────────────────────────── */
+.bundle-list-card {
+  background: var(--cream);
+  border: 3px solid var(--wood);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  transition: transform 0.1s;
+  min-height: 72px;
+}
+.bundle-list-card:active { transform: translate(1px,1px); }
+.bundle-list-card.complete {
+  background: var(--complete-bg);
+  border-color: var(--gold);
+}
+.bundle-card-accent {
+  width: 8px;
+  background: var(--wood-lt);
+  flex-shrink: 0;
+}
+.bundle-list-card.complete .bundle-card-accent { background: var(--gold); }
+.bundle-card-content {
+  flex: 1;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+.bundle-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bundle-card-name {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--wood);
+  line-height: 1.5;
+  flex: 1;
+  padding-right: 8px;
+}
+.bundle-card-icon { font-size: 22px; }
+.bundle-card-set-label {
+  font-family: var(--pixel);
+  font-size: 6px;
+  color: var(--blue);
+  letter-spacing: 0.3px;
+}
+.bundle-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mini-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--parchment-dk);
+  border: 2px solid var(--wood-lt);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.mini-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--green-lt));
+  transition: width 0.4s ease;
+}
+.bundle-list-card.complete .mini-bar-fill { background: linear-gradient(90deg, var(--gold), var(--gold-lt)); }
+.mini-progress-text {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--wood-lt);
+  white-space: nowrap;
+}
+.star-badge {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ─── SECTION HEADER ─────────────────────────────────── */
+.section-header {
+  font-family: var(--pixel);
+  font-size: 8px;
+  color: var(--wood-lt);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 16px 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--wood-lt);
+}
+.section-header:first-child { margin-top: 0; }
+
+/* ─── EMPTY STATE ────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p {
+  font-family: var(--pixel);
+  font-size: 8px;
+  color: var(--wood-lt);
+  line-height: 2;
+  margin-bottom: 16px;
+}
+
+/* ─── BUNDLE DETAIL SCREEN ───────────────────────────── */
+#screen-bundle .topbar { background: var(--wood-dk); }
+
+.bundle-hero {
+  background: linear-gradient(160deg, var(--wood) 0%, var(--wood-lt) 100%);
+  padding: 20px 16px 16px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 4px solid var(--wood-dk);
+}
+.bundle-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(0,0,0,0.04) 8px,
+    rgba(0,0,0,0.04) 9px
+  );
+}
+.bundle-hero-inner { position: relative; z-index: 1; }
+.bundle-hero-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.bundle-big-icon {
+  font-size: 48px;
+  filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.5));
+  flex-shrink: 0;
+  line-height: 1;
+}
+.bundle-hero-text { flex: 1; }
+.bundle-hero-set {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--parchment-dk);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+.bundle-hero-name {
+  font-family: var(--pixel);
+  font-size: 12px;
+  color: var(--gold-lt);
+  text-shadow: 2px 2px 0 var(--wood-dk);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.bundle-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid var(--wood-dk);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hero-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--green-lt));
+  transition: width 0.5s ease;
+}
+.hero-progress-text {
+  font-family: var(--pixel);
+  font-size: 8px;
+  color: var(--parchment);
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 var(--wood-dk);
+}
+
+/* ─── TASK ITEMS ─────────────────────────────────────── */
+.task-list { padding: 12px 12px 100px; }
+.task-group-label {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--wood-lt);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 0 6px;
+  border-bottom: 2px dotted var(--parchment-dk);
+  margin-bottom: 6px;
+}
+.task-item {
+  background: var(--cream);
+  border: 2px solid var(--parchment-dk);
+  border-radius: var(--radius);
+  padding: 12px 12px 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.task-item::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--blue-lt);
+  transition: background 0.2s;
+}
+.task-item.done { background: var(--complete-bg); border-color: var(--gold); }
+.task-item.done::before { background: var(--gold); }
+.task-item:active { transform: translate(1px,1px); }
+
+.task-check {
+  width: 28px; height: 28px;
+  border: 3px solid var(--wood-lt);
+  background: var(--parchment);
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  transition: all 0.2s;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.5);
+}
+.task-item.done .task-check {
+  background: var(--gold);
+  border-color: var(--wood-dk);
+  box-shadow: none;
+}
+.task-label {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--text-dark);
+  line-height: 1.3;
+  flex: 1;
+  font-weight: 700;
+}
+.task-item.done .task-label {
+  text-decoration: line-through;
+  color: var(--wood-lt);
+  font-weight: 400;
+}
+.task-note {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--wood-lt);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+/* ─── NAV BAR (bundle detail) ────────────────────────── */
+.bundle-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--wood-dk);
+  border-top: 3px solid var(--wood-dk);
+  display: flex;
+  padding: 8px 10px;
+  gap: 8px;
+  z-index: 10;
+  box-shadow: 0 -2px 0 rgba(0,0,0,0.3);
+}
+.nav-arrow-btn {
+  flex: 1;
+  background: var(--wood-lt);
+  border: 2px solid var(--wood-dk);
+  color: var(--parchment);
+  padding: 9px 8px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.1s, box-shadow 0.1s;
+  min-width: 0;
+  overflow: hidden;
+}
+.nav-arrow-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+.nav-arrow-btn:disabled { opacity: 0.35; pointer-events: none; }
+.nav-arrow-btn.prev { flex-direction: row; }
+.nav-arrow-btn.next { flex-direction: row-reverse; text-align: right; }
+.nav-arrow-icon {
+  font-family: var(--pixel);
+  font-size: 13px;
+  color: var(--gold-lt);
+  flex-shrink: 0;
+}
+.nav-arrow-label {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--parchment-dk);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.nav-home-btn {
+  background: var(--gold);
+  border: 2px solid var(--wood-dk);
+  color: var(--wood-dk);
+  font-size: 20px;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.nav-home-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+
+/* ─── SETUP SCREEN ───────────────────────────────────── */
+#screen-setup .scroll-area { background: var(--parchment); }
+
+.setup-section {
+  background: var(--cream);
+  border: 3px solid var(--wood);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.setup-section-head {
+  background: var(--wood);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.setup-section-title {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--gold-lt);
+  text-shadow: 1px 1px 0 var(--wood-dk);
+}
+.setup-section-body { padding: 12px; }
+
+.setup-item {
+  background: var(--parchment);
+  border: 2px solid var(--parchment-dk);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.setup-item-icon { font-size: 20px; flex-shrink: 0; }
+.setup-item-info { flex: 1; min-width: 0; }
+.setup-item-name {
+  font-family: var(--pixel);
+  font-size: 8px;
+  color: var(--wood);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.setup-item-meta {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--wood-lt);
+  margin-top: 2px;
+}
+.setup-item-actions { display: flex; gap: 6px; }
+
+.btn-sm {
+  font-family: var(--pixel);
+  font-size: 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--wood-dk);
+  border-radius: var(--radius);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  line-height: 1.5;
+  transition: transform 0.1s, box-shadow 0.1s;
+  white-space: nowrap;
+}
+.btn-sm:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+.btn-edit { background: var(--blue-lt); color: var(--wood-dk); }
+.btn-delete { background: #E88; color: var(--wood-dk); }
+.btn-add {
+  background: var(--green);
+  color: var(--cream);
+  border-color: var(--wood-dk);
+  font-family: var(--pixel);
+  font-size: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  text-align: center;
+  display: block;
+  border: 2px solid var(--wood-dk);
+  transition: transform 0.1s, box-shadow 0.1s;
+  line-height: 1.6;
+}
+.btn-add:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+
+/* ─── MODAL ──────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--parchment);
+  border: 4px solid var(--wood);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--wood-dk);
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.modal-head {
+  background: var(--wood);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--gold-lt);
+  text-shadow: 1px 1px 0 var(--wood-dk);
+  line-height: 1.5;
+}
+.modal-body { padding: 16px; }
+
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--wood);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--cream);
+  border: 2px solid var(--wood-lt);
+  border-radius: var(--radius);
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--gold);
+}
+.field textarea { min-height: 70px; resize: vertical; }
+.field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235C3D1E'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+.btn-primary {
+  flex: 1;
+  background: var(--green);
+  color: var(--cream);
+  border: 2px solid var(--wood-dk);
+  font-family: var(--pixel);
+  font-size: 8px;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-align: center;
+  line-height: 1.6;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn-primary:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+.btn-cancel {
+  flex: 1;
+  background: var(--parchment-dk);
+  color: var(--wood);
+  border: 2px solid var(--wood-lt);
+  font-family: var(--pixel);
+  font-size: 8px;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  line-height: 1.6;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn-cancel:active { transform: translate(1px,1px); }
+
+/* ─── CELEBRATION OVERLAY ────────────────────────────── */
+.celebrate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.celebrate-overlay.open { display: flex; }
+.celebrate-box {
+  background: var(--parchment);
+  border: 4px solid var(--gold);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 2px var(--wood-dk), 8px 8px 0 var(--wood-dk);
+  text-align: center;
+  padding: 28px 24px 24px;
+  max-width: 320px;
+  width: 100%;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.celebrate-stars {
+  font-size: 36px;
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+  animation: shimmer 1.5s ease-in-out infinite alternate;
+}
+@keyframes shimmer {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.4) drop-shadow(0 0 6px gold); }
+}
+.celebrate-title {
+  font-family: var(--pixel);
+  font-size: 13px;
+  color: var(--wood);
+  text-shadow: 2px 2px 0 var(--gold);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+.celebrate-msg {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--wood-lt);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.celebrate-close {
+  background: var(--gold);
+  border: 2px solid var(--wood-dk);
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--wood-dk);
+  padding: 10px 24px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  line-height: 1.6;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.celebrate-close:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--wood-dk); }
+
+/* ─── TOAST ──────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--wood-dk);
+  color: var(--parchment);
+  font-family: var(--pixel);
+  font-size: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 2px solid var(--gold);
+  box-shadow: var(--shadow);
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── LOADING ────────────────────────────────────────── */
+.loading-screen {
+  position: fixed; inset: 0;
+  background: var(--wood-dk);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 999;
+  transition: opacity 0.5s;
+}
+.loading-screen.hidden { opacity: 0; pointer-events: none; }
+.loading-icon { font-size: 56px; margin-bottom: 16px; animation: bounce 1s ease-in-out infinite alternate; }
+@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+.loading-title {
+  font-family: var(--pixel);
+  font-size: 14px;
+  color: var(--gold-lt);
+  text-shadow: 2px 2px 0 var(--wood-dk);
+  margin-bottom: 8px;
+}
+.loading-sub {
+  font-family: var(--pixel);
+  font-size: 8px;
+  color: var(--parchment-dk);
+  letter-spacing: 0.5px;
+}
+
+/* ─── COMPLETED BUNDLE BANNER ────────────────────────── */
+.complete-banner {
+  background: linear-gradient(90deg, var(--gold), var(--gold-lt), var(--gold));
+  border-top: 3px solid var(--wood-dk);
+  border-bottom: 3px solid var(--wood-dk);
+  padding: 10px 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.complete-banner p {
+  font-family: var(--pixel);
+  font-size: 9px;
+  color: var(--wood-dk);
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.4);
+  line-height: 1.6;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────── */
+.scroll-area::-webkit-scrollbar { width: 4px; }
+.scroll-area::-webkit-scrollbar-track { background: var(--parchment-dk); }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--wood-lt); border-radius: 2px; }
+.task-list::-webkit-scrollbar { width: 4px; }
+
+/* ─── ICON PICKER ────────────────────────────────────── */
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.icon-option {
+  font-size: 24px;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--parchment);
+  border: 2px solid var(--parchment-dk);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.icon-option.selected {
+  border-color: var(--gold);
+  background: var(--complete-bg);
+  box-shadow: var(--shadow);
+}
+.icon-option:active { transform: scale(0.9); }
+
+/* ─── SETUP BUNDLE TASKS ─────────────────────────────── */
+.task-edit-item {
+  background: var(--parchment);
+  border: 2px solid var(--parchment-dk);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-edit-item span {
+  flex: 1;
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+/* ─── MOBILE UTILITIES ───────────────────────────────── */
+@media (max-width: 400px) {
+  .topbar-title { font-size: 10px; }
+  .bundle-hero-name { font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADING ═══════════════════════════════════════════════════ -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-icon">🎁</div>
+  <div class="loading-title">Bundle Board</div>
+  <div class="loading-sub">Loading your bundles...</div>
+</div>
+
+<!-- ═══ HOME SCREEN ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-home">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">🌾 Bundle Board</div>
+      <span class="topbar-sub">Community Center</span>
+    </div>
+    <button class="icon-btn" onclick="goSetup()" title="Setup">⚙️</button>
+  </div>
+  <div class="toggle-tabs">
+    <button class="tab-btn active" id="tab-sets" onclick="switchTab('sets')">Sets</button>
+    <button class="tab-btn" id="tab-bundles" onclick="switchTab('bundles')">All Bundles</button>
+  </div>
+  <div class="scroll-area" id="home-content">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ═══ BUNDLE DETAIL SCREEN ══════════════════════════════════════ -->
+<div class="screen" id="screen-bundle">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="bundle-detail-name">Bundle</div>
+      <span class="topbar-sub" id="bundle-detail-set">Set</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="icon-btn" onclick="openEditBundle(currentBundleId)" title="Edit bundle">✏️</button>
+    </div>
+  </div>
+  <div id="bundle-complete-banner" class="complete-banner" style="display:none;">
+    <p>★ Bundle Complete! ★</p>
+  </div>
+  <div class="bundle-hero">
+    <div class="bundle-hero-inner">
+      <div class="bundle-hero-top">
+        <div class="bundle-big-icon" id="bundle-detail-icon">🎁</div>
+        <div class="bundle-hero-text">
+          <div class="bundle-hero-set" id="bundle-detail-set2"></div>
+          <div class="bundle-hero-name" id="bundle-detail-name2"></div>
+          <div class="bundle-hero-progress">
+            <div class="hero-bar"><div class="hero-bar-fill" id="bundle-hero-fill" style="width:0%"></div></div>
+            <div class="hero-progress-text" id="bundle-hero-text">0/0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="task-list" id="task-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <!-- rendered by JS -->
+  </div>
+  <div class="bundle-nav">
+    <button class="nav-arrow-btn prev" id="nav-prev" onclick="navBundle(-1)">
+      <span class="nav-arrow-icon">◀</span>
+      <span class="nav-arrow-label" id="nav-prev-label">Previous</span>
+    </button>
+    <button class="nav-home-btn" onclick="goHome()" title="Home">🏠</button>
+    <button class="nav-arrow-btn next" id="nav-next" onclick="navBundle(1)">
+      <span class="nav-arrow-label" id="nav-next-label">Next</span>
+      <span class="nav-arrow-icon">▶</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ SETUP SCREEN ══════════════════════════════════════════════ -->
+<div class="screen" id="screen-setup">
+  <div class="topbar">
+    <button class="icon-btn" onclick="goHome()">🏠</button>
+    <div class="topbar-title">⚙️ Setup</div>
+    <div style="width:38px"></div>
+  </div>
+  <div class="scroll-area" id="setup-content">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ═══ MODAL ═════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalIfBg(event)">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Modal</div>
+      <button class="icon-btn" style="background:transparent;border:none;box-shadow:none;" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- ═══ CELEBRATE ════════════════════════════════════════════════ -->
+<div class="celebrate-overlay" id="celebrate-overlay">
+  <div class="celebrate-box">
+    <div class="celebrate-stars" id="celebrate-stars">⭐⭐⭐</div>
+    <div class="celebrate-title" id="celebrate-title">Bundle Complete!</div>
+    <div class="celebrate-msg" id="celebrate-msg">You did it!</div>
+    <button class="celebrate-close" onclick="closeCelebrate()">✨ Wonderful! ✨</button>
+  </div>
+</div>
+
+<!-- ═══ TOAST ════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CONFIGURATION — paste your Supabase values here
+═══════════════════════════════════════════════════════════════ */
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL_HERE';
+const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY_HERE';
+
+/* ═══════════════════════════════════════════════════════════════
+   SUPABASE CLIENT
+═══════════════════════════════════════════════════════════════ */
+let sb = null;
+if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOCAL STATE
+═══════════════════════════════════════════════════════════════ */
+let sets    = [];   // [{id, name, icon, sort_order}]
+let bundles = [];   // [{id, name, icon, set_id, sort_order}]
+let tasks   = [];   // [{id, name, note, bundle_id, sort_order, done}]
+
+let currentTab       = 'sets';
+let currentBundleId  = null;
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════ */
+async function init() {
+  if (!sb) {
+    // Demo mode: load sample data so it looks great immediately
+    loadDemoData();
+  } else {
+    await loadFromSupabase();
+  }
+  hideLoading();
+  renderHome();
+  showScreen('home');
+}
+
+function loadDemoData() {
+  sets = [
+    {id:'s1', name:'Kitchen', icon:'🍳', sort_order:0},
+    {id:'s2', name:'Yard & Garden', icon:'🌱', sort_order:1},
+    {id:'s3', name:'Errands', icon:'🚗', sort_order:2},
+  ];
+  bundles = [
+    {id:'b1', name:'Pantry Bundle', icon:'🥫', set_id:'s1', sort_order:0},
+    {id:'b2', name:'Deep Clean Bundle', icon:'🧹', set_id:'s1', sort_order:1},
+    {id:'b3', name:'Garden Bundle', icon:'🌻', set_id:'s2', sort_order:0},
+    {id:'b4', name:'Lawn Bundle', icon:'🌿', set_id:'s2', sort_order:1},
+    {id:'b5', name:'Weekly Errands', icon:'🛒', set_id:'s3', sort_order:0},
+  ];
+  tasks = [
+    {id:'t1', name:'Organise spice rack', note:'', bundle_id:'b1', sort_order:0, done:false},
+    {id:'t2', name:'Wipe down shelves', note:'Top to bottom', bundle_id:'b1', sort_order:1, done:false},
+    {id:'t3', name:'Check expiry dates', note:'Donate unexpired extras', bundle_id:'b1', sort_order:2, done:false},
+    {id:'t4', name:'Restock staples', note:'Rice, pasta, canned goods', bundle_id:'b1', sort_order:3, done:false},
+    {id:'t5', name:'Scrub stovetop', note:'', bundle_id:'b2', sort_order:0, done:false},
+    {id:'t6', name:'Clean inside oven', note:'Use oven cleaner', bundle_id:'b2', sort_order:1, done:false},
+    {id:'t7', name:'Descale kettle', note:'', bundle_id:'b2', sort_order:2, done:false},
+    {id:'t8', name:'Wipe cabinet fronts', note:'', bundle_id:'b2', sort_order:3, done:false},
+    {id:'t9', name:'Plant new seedlings', note:'Tomatoes & basil', bundle_id:'b3', sort_order:0, done:false},
+    {id:'t10',name:'Water all beds', note:'', bundle_id:'b3', sort_order:1, done:false},
+    {id:'t11',name:'Add fresh compost', note:'', bundle_id:'b3', sort_order:2, done:false},
+    {id:'t12',name:'Mow front lawn', note:'', bundle_id:'b4', sort_order:0, done:false},
+    {id:'t13',name:'Edge the borders', note:'', bundle_id:'b4', sort_order:1, done:false},
+    {id:'t14',name:'Pull weeds', note:'Focus on path cracks', bundle_id:'b4', sort_order:2, done:false},
+    {id:'t15',name:'Grocery run', note:'Check the list on the fridge', bundle_id:'b5', sort_order:0, done:false},
+    {id:'t16',name:'Post office', note:'', bundle_id:'b5', sort_order:1, done:false},
+    {id:'t17',name:'Pick up prescription', note:'', bundle_id:'b5', sort_order:2, done:false},
+  ];
+}
+
+async function loadFromSupabase() {
+  try {
+    const [sRes, bRes, tRes] = await Promise.all([
+      sb.from('sets').select('*').order('sort_order'),
+      sb.from('bundles').select('*').order('sort_order'),
+      sb.from('tasks').select('*').order('sort_order'),
+    ]);
+    sets    = sRes.data || [];
+    bundles = bRes.data || [];
+    tasks   = tRes.data || [];
+  } catch(e) {
+    console.error(e);
+    showToast('Could not load data — check Supabase config');
+    loadDemoData();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════════ */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+function goHome() { renderHome(); showScreen('home'); }
+function goSetup() { renderSetup(); showScreen('setup'); }
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-sets').classList.toggle('active', tab==='sets');
+  document.getElementById('tab-bundles').classList.toggle('active', tab==='bundles');
+  renderHome();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════════ */
+function bundleTasks(bundleId)  { return tasks.filter(t => t.bundle_id === bundleId); }
+function bundleDone(bundleId)   { const t = bundleTasks(bundleId); return t.length > 0 && t.every(t => t.done); }
+function setBundles(setId)      { return bundles.filter(b => b.set_id === setId); }
+function setProgress(setId)     {
+  const bs = setBundles(setId);
+  if(!bs.length) return {done:0, total:0};
+  const done  = bs.filter(b => bundleDone(b.id)).length;
+  return {done, total:bs.length};
+}
+function bundleProgress(bid)    {
+  const t = bundleTasks(bid);
+  return {done: t.filter(x=>x.done).length, total: t.length};
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDER HOME
+═══════════════════════════════════════════════════════════════ */
+function renderHome() {
+  const el = document.getElementById('home-content');
+
+  if (currentTab === 'sets') {
+    if (!sets.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No sets yet.<br>Go to Setup to create<br>your first set!</p></div>`;
+      return;
+    }
+    let html = '';
+    sets.forEach(set => {
+      const bs = setBundles(set.id);
+      const prog = setProgress(set.id);
+      const pct = prog.total ? Math.round(prog.done/prog.total*100) : 0;
+      const chips = bs.map(b =>
+        `<span class="bundle-chip ${bundleDone(b.id)?'done':''}" onclick="event.stopPropagation();openBundle('${b.id}')">${b.icon} ${b.name}</span>`
+      ).join('');
+      html += `
+        <div class="set-card" onclick="switchTab('bundles'); filterSetId='${set.id}'">
+          <div class="set-card-header">
+            <span class="set-card-title">${set.name}</span>
+            <span class="set-card-emoji">${set.icon}</span>
+          </div>
+          <div class="set-card-body">
+            <div class="set-progress-row">
+              <div class="set-progress-bar"><div class="set-progress-fill" style="width:${pct}%"></div></div>
+              <span class="set-progress-text">${prog.done}/${prog.total} bundles</span>
+            </div>
+            <div class="set-bundle-chips">${chips || '<span class="set-bundle-chips" style="font-family:var(--pixel);font-size:7px;color:var(--wood-lt)">No bundles yet</span>'}</div>
+          </div>
+        </div>`;
+    });
+    el.innerHTML = html;
+  } else {
+    // All bundles flat list
+    if (!bundles.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎁</div><p>No bundles yet.<br>Go to Setup to add<br>your first bundle!</p></div>`;
+      return;
+    }
+    // Group by set
+    let html = '';
+    sets.forEach(set => {
+      const bs = setBundles(set.id);
+      if (!bs.length) return;
+      html += `<div class="section-header">${set.icon} ${set.name}</div>`;
+      bs.forEach(b => { html += renderBundleCard(b); });
+    });
+    // Bundles with no set
+    const orphans = bundles.filter(b => !b.set_id || !sets.find(s=>s.id===b.set_id));
+    if (orphans.length) {
+      if (sets.length) html += `<div class="section-header">📋 Uncategorised</div>`;
+      orphans.forEach(b => { html += renderBundleCard(b); });
+    }
+    el.innerHTML = html;
+  }
+}
+
+function renderBundleCard(b) {
+  const prog = bundleProgress(b.id);
+  const pct  = prog.total ? Math.round(prog.done/prog.total*100) : 0;
+  const done = bundleDone(b.id);
+  const set  = sets.find(s=>s.id===b.set_id);
+  return `
+    <div class="bundle-list-card ${done?'complete':''}" onclick="openBundle('${b.id}')">
+      <div class="bundle-card-accent"></div>
+      <div class="bundle-card-content">
+        <div class="bundle-card-top">
+          <div>
+            ${set ? `<div class="bundle-card-set-label">${set.name}</div>` : ''}
+            <div class="bundle-card-name">${b.name}</div>
+          </div>
+          <span class="bundle-card-icon">${b.icon}</span>
+        </div>
+        <div class="bundle-card-progress">
+          <div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
+          <span class="mini-progress-text">${prog.done}/${prog.total}</span>
+          ${done ? '<span class="star-badge">⭐</span>' : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OPEN BUNDLE
+═══════════════════════════════════════════════════════════════ */
+function openBundle(bundleId) {
+  currentBundleId = bundleId;
+  renderBundleDetail();
+  showScreen('bundle');
+}
+
+function renderBundleDetail() {
+  const b    = bundles.find(x=>x.id===currentBundleId);
+  if (!b) return;
+  const set  = sets.find(s=>s.id===b.set_id);
+  const ts   = bundleTasks(b.id);
+  const prog = bundleProgress(b.id);
+  const pct  = prog.total ? Math.round(prog.done/prog.total*100) : 0;
+  const done = bundleDone(b.id);
+
+  document.getElementById('bundle-detail-name').textContent  = b.name;
+  document.getElementById('bundle-detail-name2').textContent = b.name;
+  document.getElementById('bundle-detail-set').textContent   = set ? set.name : '';
+  document.getElementById('bundle-detail-set2').textContent  = set ? `${set.icon} ${set.name}` : '';
+  document.getElementById('bundle-detail-icon').textContent  = b.icon;
+  document.getElementById('bundle-hero-fill').style.width    = pct + '%';
+  document.getElementById('bundle-hero-text').textContent    = `${prog.done}/${prog.total}`;
+  document.getElementById('bundle-complete-banner').style.display = done ? 'block' : 'none';
+
+  // Nav buttons
+  const allBundles = bundles;
+  const idx = allBundles.findIndex(x=>x.id===currentBundleId);
+  const prev = allBundles[idx-1];
+  const next = allBundles[idx+1];
+  const prevBtn = document.getElementById('nav-prev');
+  const nextBtn = document.getElementById('nav-next');
+  prevBtn.disabled = !prev;
+  nextBtn.disabled = !next;
+  document.getElementById('nav-prev-label').textContent = prev ? prev.name : 'Start';
+  document.getElementById('nav-next-label').textContent = next ? next.name : 'End';
+
+  // Tasks
+  const taskEl = document.getElementById('task-list');
+  if (!ts.length) {
+    taskEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No tasks in this bundle.<br>Edit to add some!</p></div>`;
+    return;
+  }
+  taskEl.innerHTML = ts.map(t => `
+    <div class="task-item ${t.done?'done':''}" id="task-${t.id}" onclick="toggleTask('${t.id}')">
+      <div class="task-check">${t.done?'✔':''}</div>
+      <div style="flex:1">
+        <div class="task-label">${t.name}</div>
+        ${t.note ? `<div class="task-note">${t.note}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function navBundle(dir) {
+  const idx = bundles.findIndex(x=>x.id===currentBundleId);
+  const next = bundles[idx+dir];
+  if (next) { currentBundleId = next.id; renderBundleDetail(); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE TASK
+═══════════════════════════════════════════════════════════════ */
+async function toggleTask(taskId) {
+  const task = tasks.find(t=>t.id===taskId);
+  if (!task) return;
+  task.done = !task.done;
+
+  // Optimistic UI
+  const el = document.getElementById(`task-${taskId}`);
+  if (el) {
+    el.classList.toggle('done', task.done);
+    el.querySelector('.task-check').textContent = task.done ? '✔' : '';
+  }
+
+  // Update progress bar
+  const prog = bundleProgress(currentBundleId);
+  const pct  = prog.total ? Math.round(prog.done/prog.total*100) : 0;
+  document.getElementById('bundle-hero-fill').style.width = pct + '%';
+  document.getElementById('bundle-hero-text').textContent = `${prog.done}/${prog.total}`;
+
+  // Persist
+  if (sb) {
+    await sb.from('tasks').update({done: task.done}).eq('id', taskId);
+  }
+
+  // Check bundle completion
+  if (bundleDone(currentBundleId)) {
+    document.getElementById('bundle-complete-banner').style.display = 'block';
+    triggerBundleCelebration(bundles.find(b=>b.id===currentBundleId));
+  } else {
+    document.getElementById('bundle-complete-banner').style.display = 'none';
+    if (task.done) showToast('Task done! ⭐');
+  }
+
+  renderHome(); // keep home in sync
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CELEBRATIONS
+═══════════════════════════════════════════════════════════════ */
+const bundleMsgs = [
+  "The Community Center thanks you! 🏡",
+  "The Junimos are dancing with joy! ✨",
+  "A golden bundle sealed with love! 💛",
+  "The valley shines a little brighter! 🌟",
+  "Pierre nods approvingly. Well done! 🧑‍🌾",
+  "You've earned a good night's sleep! 🌙",
+];
+function triggerBundleCelebration(bundle) {
+  document.getElementById('celebrate-stars').textContent = '⭐⭐⭐';
+  document.getElementById('celebrate-title').textContent = `${bundle.icon} Bundle Complete!`;
+  document.getElementById('celebrate-msg').textContent   = bundleMsgs[Math.floor(Math.random()*bundleMsgs.length)];
+  document.getElementById('celebrate-overlay').classList.add('open');
+}
+function closeCelebrate() {
+  document.getElementById('celebrate-overlay').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODAL HELPERS
+═══════════════════════════════════════════════════════════════ */
+function openModal(title, bodyHtml, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-actions').innerHTML = actions;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModalIfBg(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+const ICONS = ['🎁','🌾','🍳','🧹','🌻','🛒','🔧','📚','💪','🎨','🐾','🚗','🌿','🍀','⭐','🏡','🧺','💡','🎵','🌊','🍎','🧰','📋','🎯','🌙','❤️','🏋️','✂️','🌸','🧁'];
+
+function iconPickerHtml(selectedIcon, name='icon') {
+  return `<div class="icon-picker">${ICONS.map(i =>
+    `<span class="icon-option ${i===selectedIcon?'selected':''}" onclick="selectIcon(this,'${name}')">${i}</span>`
+  ).join('')}</div><input type="hidden" id="field-${name}" value="${selectedIcon||ICONS[0]}"/>`;
+}
+function selectIcon(el, name) {
+  el.closest('.icon-picker').querySelectorAll('.icon-option').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById(`field-${name}`).value = el.textContent.trim();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SETUP SCREEN
+═══════════════════════════════════════════════════════════════ */
+function renderSetup() {
+  const el = document.getElementById('setup-content');
+  let html = '';
+
+  // ── SETS ──
+  html += `
+    <div class="setup-section">
+      <div class="setup-section-head">
+        <span class="setup-section-title">📦 Sets</span>
+      </div>
+      <div class="setup-section-body">`;
+  sets.forEach(s => {
+    const bs = setBundles(s.id);
+    html += `
+      <div class="setup-item">
+        <span class="setup-item-icon">${s.icon}</span>
+        <div class="setup-item-info">
+          <div class="setup-item-name">${s.name}</div>
+          <div class="setup-item-meta">${bs.length} bundle${bs.length!==1?'s':''}</div>
+        </div>
+        <div class="setup-item-actions">
+          <button class="btn-sm btn-edit" onclick="openEditSet('${s.id}')">Edit</button>
+          <button class="btn-sm btn-delete" onclick="deleteSet('${s.id}')">✕</button>
+        </div>
+      </div>`;
+  });
+  html += `<button class="btn-add" onclick="openAddSet()">+ Add Set</button></div></div>`;
+
+  // ── BUNDLES ──
+  html += `
+    <div class="setup-section">
+      <div class="setup-section-head">
+        <span class="setup-section-title">🎁 Bundles</span>
+      </div>
+      <div class="setup-section-body">`;
+  bundles.forEach(b => {
+    const set = sets.find(s=>s.id===b.set_id);
+    const ts  = bundleTasks(b.id);
+    html += `
+      <div class="setup-item">
+        <span class="setup-item-icon">${b.icon}</span>
+        <div class="setup-item-info">
+          <div class="setup-item-name">${b.name}</div>
+          <div class="setup-item-meta">${set?set.name:'No set'} · ${ts.length} task${ts.length!==1?'s':''}</div>
+        </div>
+        <div class="setup-item-actions">
+          <button class="btn-sm btn-edit" onclick="openEditBundle('${b.id}')">Edit</button>
+          <button class="btn-sm btn-delete" onclick="deleteBundle('${b.id}')">✕</button>
+        </div>
+      </div>`;
+  });
+  html += `<button class="btn-add" onclick="openAddBundle()">+ Add Bundle</button></div></div>`;
+
+  el.innerHTML = html;
+}
+
+/* ─── ADD / EDIT SET ──────────────────────────────────────────── */
+function openAddSet() {
+  openModal('New Set',
+    `<div class="field"><label>SET NAME</label><input id="field-name" placeholder="e.g. Kitchen"/></div>
+     <div class="field"><label>ICON</label>${iconPickerHtml('📦')}</div>`,
+    `<button class="btn-cancel" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveSet()">Save Set</button>`
+  );
+}
+function openEditSet(setId) {
+  const s = sets.find(x=>x.id===setId);
+  openModal('Edit Set',
+    `<input type="hidden" id="field-id" value="${s.id}"/>
+     <div class="field"><label>SET NAME</label><input id="field-name" value="${s.name}"/></div>
+     <div class="field"><label>ICON</label>${iconPickerHtml(s.icon)}</div>`,
+    `<button class="btn-cancel" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveSet()">Save Set</button>`
+  );
+}
+async function saveSet() {
+  const id   = (document.getElementById('field-id')||{}).value;
+  const name = document.getElementById('field-name').value.trim();
+  const icon = document.getElementById('field-icon').value;
+  if (!name) { showToast('Name required!'); return; }
+
+  if (id) {
+    const s = sets.find(x=>x.id===id);
+    s.name = name; s.icon = icon;
+    if (sb) await sb.from('sets').update({name,icon}).eq('id',id);
+  } else {
+    const newSet = {id: uid(), name, icon, sort_order: sets.length};
+    sets.push(newSet);
+    if (sb) await sb.from('sets').insert(newSet);
+  }
+  closeModal(); renderSetup(); renderHome();
+}
+async function deleteSet(setId) {
+  if (!confirm('Delete this set? Bundles inside will become uncategorised.')) return;
+  sets = sets.filter(s=>s.id!==setId);
+  bundles.forEach(b => { if(b.set_id===setId) b.set_id = null; });
+  if (sb) { await sb.from('sets').delete().eq('id',setId); }
+  renderSetup(); renderHome();
+}
+
+/* ─── ADD / EDIT BUNDLE ───────────────────────────────────────── */
+function openAddBundle() {
+  const setOptions = sets.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('');
+  openModal('New Bundle',
+    `<div class="field"><label>BUNDLE NAME</label><input id="field-name" placeholder="e.g. Pantry Bundle"/></div>
+     <div class="field"><label>ICON</label>${iconPickerHtml('🎁')}</div>
+     <div class="field"><label>SET</label><select id="field-set"><option value="">-- No set --</option>${setOptions}</select></div>`,
+    `<button class="btn-cancel" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveBundle()">Save Bundle</button>`
+  );
+}
+function openEditBundle(bundleId) {
+  const b = bundles.find(x=>x.id===bundleId);
+  if (!b) return;
+  const setOptions = sets.map(s=>`<option value="${s.id}" ${s.id===b.set_id?'selected':''}>${s.icon} ${s.name}</option>`).join('');
+  const ts = bundleTasks(bundleId);
+  const taskHtml = ts.map(t => `
+    <div class="task-edit-item" id="tedit-${t.id}">
+      <span>${t.name}${t.note?` <em style="opacity:0.6;font-size:11px">— ${t.note}</em>`:''}</span>
+      <button class="btn-sm btn-edit" onclick="openEditTask('${t.id}')">Edit</button>
+      <button class="btn-sm btn-delete" onclick="deleteTask('${t.id}')">✕</button>
+    </div>`).join('');
+  openModal('Edit Bundle',
+    `<input type="hidden" id="field-id" value="${b.id}"/>
+     <div class="field"><label>BUNDLE NAME</label><input id="field-name" value="${b.name}"/></div>
+     <div class="field"><label>ICON</label>${iconPickerHtml(b.icon)}</div>
+     <div class="field"><label>SET</label><select id="field-set"><option value="">-- No set --</option>${setOptions}</select></div>
+     <div class="field"><label>TASKS</label>${taskHtml || '<p style="font-size:12px;color:var(--wood-lt);margin-bottom:8px">No tasks yet.</p>'}
+       <button class="btn-add" style="margin-top:6px" onclick="openAddTask('${b.id}')">+ Add Task</button>
+     </div>`,
+    `<button class="btn-cancel" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveBundle()">Save</button>`
+  );
+}
+async function saveBundle() {
+  const id     = (document.getElementById('field-id')||{}).value;
+  const name   = document.getElementById('field-name').value.trim();
+  const icon   = document.getElementById('field-icon').value;
+  const set_id = document.getElementById('field-set').value || null;
+  if (!name) { showToast('Name required!'); return; }
+
+  if (id) {
+    const b = bundles.find(x=>x.id===id);
+    b.name = name; b.icon = icon; b.set_id = set_id;
+    if (sb) await sb.from('bundles').update({name,icon,set_id}).eq('id',id);
+  } else {
+    const nb = {id:uid(), name, icon, set_id, sort_order: bundles.length};
+    bundles.push(nb);
+    if (sb) await sb.from('bundles').insert(nb);
+  }
+  closeModal(); renderSetup(); renderHome();
+  if (currentBundleId) renderBundleDetail();
+}
+async function deleteBundle(bundleId) {
+  if (!confirm('Delete this bundle and all its tasks?')) return;
+  tasks   = tasks.filter(t=>t.bundle_id!==bundleId);
+  bundles = bundles.filter(b=>b.id!==bundleId);
+  if (sb) {
+    await sb.from('tasks').delete().eq('bundle_id',bundleId);
+    await sb.from('bundles').delete().eq('id',bundleId);
+  }
+  renderSetup(); renderHome();
+}
+
+/* ─── ADD / EDIT TASK ────────────────────────────────────────── */
+function openAddTask(bundleId) {
+  openModal('New Task',
+    `<input type="hidden" id="field-bundle-id" value="${bundleId}"/>
+     <div class="field"><label>TASK NAME</label><input id="field-name" placeholder="e.g. Wipe down shelves"/></div>
+     <div class="field"><label>NOTE (optional)</label><textarea id="field-note" placeholder="Any extra detail..."></textarea></div>`,
+    `<button class="btn-cancel" onclick="openEditBundle(document.getElementById('field-bundle-id').value)">Back</button>
+     <button class="btn-primary" onclick="saveTask()">Add Task</button>`
+  );
+}
+function openEditTask(taskId) {
+  const t = tasks.find(x=>x.id===taskId);
+  openModal('Edit Task',
+    `<input type="hidden" id="field-id" value="${t.id}"/>
+     <input type="hidden" id="field-bundle-id" value="${t.bundle_id}"/>
+     <div class="field"><label>TASK NAME</label><input id="field-name" value="${t.name}"/></div>
+     <div class="field"><label>NOTE (optional)</label><textarea id="field-note">${t.note||''}</textarea></div>`,
+    `<button class="btn-cancel" onclick="openEditBundle(document.getElementById('field-bundle-id').value)">Back</button>
+     <button class="btn-primary" onclick="saveTask()">Save Task</button>`
+  );
+}
+async function saveTask() {
+  const id        = (document.getElementById('field-id')||{}).value;
+  const bundleId  = document.getElementById('field-bundle-id').value;
+  const name      = document.getElementById('field-name').value.trim();
+  const note      = (document.getElementById('field-note')||{}).value?.trim() || '';
+  if (!name) { showToast('Task name required!'); return; }
+
+  if (id) {
+    const t = tasks.find(x=>x.id===id);
+    t.name = name; t.note = note;
+    if (sb) await sb.from('tasks').update({name,note}).eq('id',id);
+  } else {
+    const nt = {id:uid(), name, note, bundle_id:bundleId, sort_order:tasks.filter(t=>t.bundle_id===bundleId).length, done:false};
+    tasks.push(nt);
+    if (sb) await sb.from('tasks').insert(nt);
+  }
+  openEditBundle(bundleId);
+  renderHome();
+  if (currentBundleId === bundleId) renderBundleDetail();
+}
+async function deleteTask(taskId) {
+  const t = tasks.find(x=>x.id===taskId);
+  if (!t) return;
+  if (!confirm('Delete this task?')) return;
+  const bundleId = t.bundle_id;
+  tasks = tasks.filter(x=>x.id!==taskId);
+  if (sb) await sb.from('tasks').delete().eq('id',taskId);
+  openEditBundle(bundleId);
+  renderHome();
+  if (currentBundleId === bundleId) renderBundleDetail();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════════════════ */
+function hideLoading() {
+  const el = document.getElementById('loadingScreen');
+  el.classList.add('hidden');
+  setTimeout(() => el.style.display='none', 600);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   KICK OFF
+═══════════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
