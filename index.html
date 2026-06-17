@@ -441,7 +441,7 @@ body {
 }
 
 /* ─── TASK ITEMS ─────────────────────────────────────── */
-.task-list { padding: 12px 12px 100px; }
+.task-list { padding: 12px 12px 130px; }
 .task-group-label {
   font-family: var(--pixel);
   font-size: 7px;
@@ -522,7 +522,7 @@ body {
   background: var(--wood-dk);
   border-top: 3px solid var(--wood-dk);
   display: flex;
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) 10px;
+  padding: 8px 10px calc(16px + env(safe-area-inset-bottom, 20px)) 10px;
   gap: 8px;
   z-index: 10;
   box-shadow: 0 -2px 0 rgba(0,0,0,0.3);
@@ -958,35 +958,7 @@ body {
   .bundle-hero-name { font-size: 10px; }
 }
 
-/* ─── WOOD GRAIN TEXTURE ─────────────────────────────── */
-.topbar, .set-card-header, .setup-section-head, .modal-head,
-.bundle-hero, #screen-bundle .topbar, .bundle-nav,
-.toggle-tabs, .complete-banner {
-  background-image:
-    repeating-linear-gradient(
-      92deg,
-      transparent 0px, transparent 3px,
-      rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px,
-      transparent 4px, transparent 9px,
-      rgba(255,255,255,0.04) 9px, rgba(255,255,255,0.04) 10px
-    ),
-    repeating-linear-gradient(
-      180deg,
-      transparent 0px, transparent 12px,
-      rgba(0,0,0,0.04) 12px, rgba(0,0,0,0.04) 13px
-    );
-}
 
-/* ─── PARCHMENT TEXTURE ──────────────────────────────── */
-.scroll-area, .task-list, .modal, .celebrate-box,
-.set-card-body, .bundle-card-content, .setup-section-body,
-.task-item, .setup-item {
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeBlend in='SourceGraphic' mode='multiply'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 20% 30%, rgba(180,140,80,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 70%, rgba(160,120,60,0.05) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 10%, rgba(200,170,100,0.06) 0%, transparent 40%);
-}
 
 </style>
 </head>
